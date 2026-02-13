@@ -37,4 +37,9 @@ public final class HibernateUtil {
             sessionFactory.close();
         }
     }
+
+    public static void rebuildSessionFactory() {
+        shutdown();
+        buildSessionFactory();
+    }
 }

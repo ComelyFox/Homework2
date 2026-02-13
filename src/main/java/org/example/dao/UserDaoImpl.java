@@ -7,6 +7,8 @@ import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Bean;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +18,7 @@ public class UserDaoImpl implements UserDao {
     private static final Logger log = LoggerFactory.getLogger(UserDaoImpl.class);
 
     @Override
+    @Bean
     public void save(Users user) {
         log.info("Начато сохранение пользователя: name={}, email={}, age={}, created_at={}",
                 user.getName(), user.getEmail(), user.getAge(), user.getCreated_at());
@@ -39,6 +42,7 @@ public class UserDaoImpl implements UserDao {
     }
 
     @Override
+
     public Optional<Users> findById(Long id) {
         log.info("Поиск пользователя по id={}", id);
 
