@@ -1,23 +1,25 @@
 package org.example;
 
-import org.example.dao.UserDao;
 import org.example.dao.UserDaoImpl;
 import org.example.entity.Users;
 import org.example.util.HibernateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.example.service.UserService;
+import org.example.service.UserServiceImpl;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
+@SpringBootApplication
 public class Main {
 
     private static final Logger log = LoggerFactory.getLogger(Main.class);
     private static final Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
-        UserDao userDao = new UserDaoImpl();
+        UserService userService = new UserServiceImpl(new UserDaoImpl());
 
         boolean running = true;
         while (running) {
@@ -26,11 +28,11 @@ public class Main {
 
             try {
                 switch (choice) {
-                    case 1 -> createUser(userDao);
-                    case 2 -> findUserById(userDao);
-                    case 3 -> listAllUsers(userDao);
-                    case 4 -> updateUser(userDao);
-                    case 5 -> deleteUser(userDao);
+                    case 1 -> createUser(userService);
+                    case 2 -> findUserById(userService);
+                    case 3 -> listAllUsers(userService);
+                    case 4 -> updateUser(userService);
+                    case 5 -> deleteUser(userService);
                     case 0 -> {
                         running = false;
                         log.info("Завершение работы приложения");
@@ -60,7 +62,7 @@ public class Main {
             """);
     }
 
-    private static void createUser(UserDao userDao) {
+    private static void createUser(UserService userService) {
         System.out.print("""
                 --- Создание пользователя ---
                 Имя:\s""");
@@ -70,17 +72,16 @@ public class Main {
         String email = scanner.nextLine();
 
         int age = readInt("Возраст: ");
-        Users user = new Users(name, email, age);
-        userDao.save(user);
+        Users user = userService.createUser(name, email, age);
 
         System.out.printf("Пользователь создан с id: %s\n", user.getId());
     }
 
-    private static void findUserById(UserDao userDao) {
+    private static void findUserById(UserService userService) {
         System.out.println("--- Поиск пользователя по id ---");
-        long id = readLong("id пользователя: ");
+        Long id = readLong("id пользователя: ");
 
-        Optional<Users> userOpt = userDao.findById(id);
+        Optional<Users> userOpt = userService.getUserById(id);
         if (userOpt.isPresent()) {
             System.out.printf("Найден пользователь: %s\n", userOpt.get());
         } else {
@@ -88,9 +89,9 @@ public class Main {
         }
     }
 
-    private static void listAllUsers(UserDao userDao) {
+    private static void listAllUsers(UserService userService) {
         System.out.println("--- Список всех пользователей ---");
-        List<Users> users = userDao.findAll();
+        List<Users> users = userService.getAllUsers();
         if (users.isEmpty()) {
             System.out.println("Пользователи отсутствуют");
         } else {
@@ -98,11 +99,11 @@ public class Main {
         }
     }
 
-    private static void updateUser(UserDao userDao) {
+    private static void updateUser(UserService userService) {
         System.out.println("--- Обновление пользователя ---");
-        long id = readLong("id пользователя для обновления: ");
+        Long id = readLong("id пользователя для обновления: ");
 
-        Optional<Users> userOpt = userDao.findById(id);
+        Optional<Users> userOpt = userService.getUserById(id);
         if (userOpt.isEmpty()) {
             System.out.printf("Пользователь с id %s не найден\n", id);
             return;
@@ -126,24 +127,29 @@ public class Main {
         String ageInput;
         System.out.print("Новый возраст (пусто, чтобы не менять): ");
         ageInput = scanner.nextLine();
+        Integer newAge = null;
         if (!ageInput.isBlank()) {
             try {
-                int newAge = Integer.parseInt(ageInput);
+                newAge = Integer.parseInt(ageInput);
                 user.setAge(newAge);
             } catch (NumberFormatException ex) {
                 System.out.println("Возраст не изменен: некорректное число");
             }
         }
 
-        userDao.update(user);
-        System.out.println("Пользователь обновлен");
+        Optional<Users> updatedOpt = userService.updateUser(id, newName, newEmail, newAge);
+        if (updatedOpt.isPresent()) {
+            System.out.println("Пользователь обновлен: " + updatedOpt.get());
+        } else {
+            System.out.println("Обновление не выполнено");
+        }
     }
 
-    private static void deleteUser(UserDao userDao) {
+    private static void deleteUser(UserService userService) {
         System.out.println("--- Удаление пользователя ---");
-        long id = readLong("id пользователя для удаления: ");
+        Long id = readLong("id пользователя для удаления: ");
 
-        userDao.deleteById(id);
+        userService.deleteUser(id);
         System.out.println("Операция удаления выполнена (проверьте лог, был ли пользователь найден)");
     }
 
